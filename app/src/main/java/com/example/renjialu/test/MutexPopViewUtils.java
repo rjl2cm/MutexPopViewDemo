@@ -39,34 +39,37 @@ public class MutexPopViewUtils {
         return result;
     }
 
+
+
     private boolean closeBool = true;
 
     private boolean isShowing = false;
+
     public void start() {
-        final Lock mlock = new ReentrantLock();
+//        final Lock mlock = new ReentrantLock();
         new Thread(new Runnable() {
             @Override
             public void run() {
                 Log.i("franer", "started runing!");
                 isTaskRunning = true;
+                int checkNum = 0;
                 while (closeBool) {
                     if (isShowing) {
                         SystemClock.sleep(100);
-                        checkNun++
+                        if (checkNum++ > 50){
+                            isShowing = false;
+                        }
+                        continue;
                     }
                     PopViewTask task = mQueue.poll();
-
                     if (task == null || task.mRunStart == null) {
                         if (task != null) {
                             mQueue.remove(task);
                         }
                         continue;
                     }
-
                     task.mRunStart.run();
                     isShowing = true;
-
-
                     Log.e("franer","run a task which priority is "+ task.mPriority);
                 }
                 isTaskRunning = false;
