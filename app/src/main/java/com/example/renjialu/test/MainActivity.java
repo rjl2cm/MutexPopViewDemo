@@ -17,23 +17,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch(v.getId()){
             case R.id.btn1:
-                final Toast toast1 = Toast.makeText(this, "this Toast‘s priority = 1", Toast.LENGTH_SHORT);
+
+                /*final Toast toast1 = Toast.makeText(this, "this Toast‘s priority = 1", Toast.LENGTH_SHORT);
                 MutexPopViewUtils.addPopViewTask(MutexPopViewUtils.generateTask(1).setRun(new Runnable() {
                     @Override
                     public void run() {
                         toast1.show();
                     }
                 },2000));
-                break;
+                break;*/
+
+//                MutexPopViewUtils1.BasePopTask toast1 =
+//                MyToast.makeText(this, "this Toast‘s priority = 1", Toast.LENGTH_SHORT);
+//                MutexPopViewUtils1.addPopViewTask(toast1);
+
             case R.id.btn2:
-                final Toast toast2 = Toast.makeText(this, "this Toast‘s priority = 2", Toast.LENGTH_SHORT);
+
+                /*final Toast toast2 = Toast.makeText(this, "this Toast‘s priority = 2", Toast.LENGTH_SHORT);
                 MutexPopViewUtils.addPopViewTask(MutexPopViewUtils.generateTask(2).setRun(new Runnable() {
                     @Override
                     public void run() {
                         toast2.show();
                     }
                 }, 2000));
-                break;
+                break;*/
+                MyToast toast2 = (MyToast) MyToast.makeText(this, "this Toast‘s priority = 2", Toast.LENGTH_SHORT);
+//                MutexPopViewUtils1.addPopViewTask(toast2);
+
             case R.id.btn3:
 
 
