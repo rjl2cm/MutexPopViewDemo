@@ -8,17 +8,29 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.locks.Lock;
 
 public class MutexPopManager {
-    /** 互斥线程是否运行状态 */
+    /**
+     * 互斥线程是否运行状态
+     */
     private static boolean isMutexRunning = false;
-    /** 静态实例对象 */
+    /**
+     * 静态实例对象
+     */
     private static MutexPopManager mInstance;
-    /** 同步锁 */
+    /**
+     * 同步锁
+     */
     private static Lock mLock;
-    /** 用来存放Task的队列 */
+    /**
+     * 用来存放Task的队列
+     */
     private Queue<BasePopTask> mQueue;
-    /** 当前正在执行的Task */
+    /**
+     * 当前正在执行的Task
+     */
     private BasePopTask mCurrentRunningTask;
-    /** 内循环的布尔值 */
+    /**
+     * 内循环的布尔值
+     */
     private boolean mCloseLoopBool;
 
     private boolean isShowing = false;
@@ -39,7 +51,7 @@ public class MutexPopManager {
     }
 
     /**
-     * @return true执行成功或已加入队列，否则返回false
+     * @return true:已显示或已加入队列，否则返回false
      * @description: 执行PopTask的调用方法
      * @author renjialu
      */
@@ -51,6 +63,10 @@ public class MutexPopManager {
         if (mInstance.mCurrentRunningTask == null || mTask.isEnforce && mTask.compareTo(mInstance.mCurrentRunningTask) < 0) {
             if (mInstance.mCurrentRunningTask != null) {
                 mInstance.mCurrentRunningTask.mutexDismiss();
+                // 如果当前显示的任务是可恢复的，则将其重新添加回队列内
+                if (mInstance.mCurrentRunningTask.isResumable) {
+                    mInstance.mQueue.add(mInstance.mCurrentRunningTask);
+                }
             }
             // 进行一波显示
             mInstance.mCurrentRunningTask = mTask;
@@ -120,14 +136,14 @@ public class MutexPopManager {
     }
 
     public static synchronized void finish() {
-        if (mInstance == null){
+        if (mInstance == null) {
             return;
         }
         mInstance.mCloseLoopBool = false;
-        if (!mInstance.mQueue.isEmpty()){
+        if (!mInstance.mQueue.isEmpty()) {
             mInstance.mQueue.clear();
         }
-        if (mInstance.mCurrentRunningTask != null){
+        if (mInstance.mCurrentRunningTask != null) {
             mInstance.mCurrentRunningTask.mutexDismiss();
         }
     }
@@ -154,14 +170,24 @@ public class MutexPopManager {
 
         public static final int MIN_PRIORITY = 10;
 
-        /** 弹框Item实际内容 */
+        /**
+         * 弹框Item实际内容
+         */
         private PopItem mItem;
-        /** 弹框优先级 */
+        /**
+         * 弹框优先级
+         */
         private int mPriority;
-        /** 是否入队列 */
+        /**
+         * 是否入队列
+         */
         private boolean isEnqueue;
-        /** 是否强制 */
+        /**
+         * 是否强制
+         */
         private boolean isEnforce;
+
+        private boolean isResumable;
 
         public int getPriority() {
             return mPriority;
@@ -201,15 +227,24 @@ public class MutexPopManager {
             isEnforce = enforce;
         }
 
-        public BasePopTask(PopItem item, int priority, boolean isenqueue, boolean isforce) {
+        public boolean isResumable() {
+            return isResumable;
+        }
+
+        public void setResumable(boolean resumable) {
+            isResumable = resumable;
+        }
+
+        public BasePopTask(PopItem item, int priority, boolean isenqueue, boolean isforce, boolean isResumable) {
             this.mItem = item;
             this.isEnqueue = isenqueue;
             this.isEnforce = isforce;
+            this.isResumable = isResumable;
             this.setPriority(priority);
         }
 
         public BasePopTask(PopItem item) {
-            this(item, MIN_PRIORITY, false, false);
+            this(item, MIN_PRIORITY, true, false, false);
         }
 
         @Override
