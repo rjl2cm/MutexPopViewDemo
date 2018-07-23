@@ -6,7 +6,6 @@ import android.util.Log;
 import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class MutexPopManager {
     /** 互斥线程是否运行状态 */
@@ -19,16 +18,19 @@ public class MutexPopManager {
     private Queue<BasePopTask> mQueue;
     /** 当前正在执行的Task */
     private BasePopTask mCurrentRunningTask;
+    /** 内循环的布尔值 */
+    private boolean mCloseLoopBool;
 
+    private boolean isShowing = false;
 
-    private static synchronized void ensureInstance(){
+    private static synchronized void ensureInstance() {
         // 如果实例未初始化
         if (mInstance == null) {
             mInstance = new MutexPopManager();
         }
     }
 
-    private static synchronized void ensureQueue(){
+    private static synchronized void ensureQueue() {
         ensureInstance();
         // 如果队列未初始化
         if (mInstance.mQueue == null) {
@@ -37,10 +39,10 @@ public class MutexPopManager {
     }
 
     /**
-     * @description: 执行PopTask的调用方法
      * @return true执行成功或已加入队列，否则返回false
+     * @description: 执行PopTask的调用方法
      * @author renjialu
-     * */
+     */
     public static synchronized boolean exePopTask(@NonNull BasePopTask mTask) {
         boolean result;
         // 确保实例对象不为空
@@ -71,21 +73,18 @@ public class MutexPopManager {
         return result;
     }
 
-    private boolean closeBool = true;
-
-    private boolean isShowing = false;
-
     public void start() {
         // 如果互斥机制正在运行
         if (isMutexRunning) {
             return;
         }
+        mCloseLoopBool = true;
         new Thread(new Runnable() {
             @Override
             public void run() {
                 Log.i("franer", "started runing!");
                 isMutexRunning = true;
-                while (closeBool) {
+                while (mCloseLoopBool) {
                     mLock.lock();
                     Object object = mQueue.poll();
                     MutexPopManager.BasePopTask task = null;
@@ -120,6 +119,19 @@ public class MutexPopManager {
         }).start();
     }
 
+    public static synchronized void finish() {
+        if (mInstance == null){
+            return;
+        }
+        mInstance.mCloseLoopBool = false;
+        if (!mInstance.mQueue.isEmpty()){
+            mInstance.mQueue.clear();
+        }
+        if (mInstance.mCurrentRunningTask != null){
+            mInstance.mCurrentRunningTask.mutexDismiss();
+        }
+    }
+
     public static void doNextTask() {
 
         try {
@@ -136,27 +148,19 @@ public class MutexPopManager {
 
     }
 
-    public class BasePopTask implements PopItem, Comparable<BasePopTask>{
+    public class BasePopTask implements PopItem, Comparable<BasePopTask> {
 
         public static final int MAX_PRIORITY = 0;
 
         public static final int MIN_PRIORITY = 10;
 
-        /**
-         * 弹框Item实际内容
-         */
+        /** 弹框Item实际内容 */
         private PopItem mItem;
-        /**
-         * 弹框优先级
-         */
+        /** 弹框优先级 */
         private int mPriority;
-        /**
-         * 是否入队列
-         */
+        /** 是否入队列 */
         private boolean isEnqueue;
-        /**
-         * 是否强制
-         */
+        /** 是否强制 */
         private boolean isEnforce;
 
         public int getPriority() {
@@ -164,7 +168,7 @@ public class MutexPopManager {
         }
 
         /**
-         * @Description: set优先级方法需要计算是否在规定范围内
+         * @Description: set优先级方法需要在规定范围内
          */
         public void setPriority(int priority) {
             // 确保priority 的大小返回在规定范围内
@@ -197,11 +201,11 @@ public class MutexPopManager {
             isEnforce = enforce;
         }
 
-        public BasePopTask(PopItem item, int mPriority, boolean isEnqueue, boolean isEnforce) {
+        public BasePopTask(PopItem item, int priority, boolean isenqueue, boolean isforce) {
             this.mItem = item;
-            this.isEnqueue = isEnqueue;
-            this.isEnforce = isEnforce;
-            this.setPriority(mPriority);
+            this.isEnqueue = isenqueue;
+            this.isEnforce = isforce;
+            this.setPriority(priority);
         }
 
         public BasePopTask(PopItem item) {
